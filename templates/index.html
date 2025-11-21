@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic RAG - Intelligent Memory & Knowledge System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Auth Modal */
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-modal.active {
+            display: flex;
+        }
+
+        .auth-box {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .auth-box h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .auth-box p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .auth-tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .auth-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        /* Header */
+        .header {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header.active {
+            display: flex;
+        }
+
+        .header-left h1 {
+            color: #667eea;
+            font-size: 24px;
+        }
+
+        .header-left p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info .user-email {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-info .user-status {
+            font-size: 12px;
+            color: #28a745;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        /* Admin Navigation */
+        .admin-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            position: relative;
+        }
+
+        .admin-nav-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            position: relative;
+        }
+
+        .admin-nav-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+        }
+
+        .admin-nav-btn:active {
+            transform: translateY(0);
+        }
+
+        .admin-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 220px;
+            z-index: 1000;
+        }
+
+        .admin-dropdown.show {
+            display: block;
+        }
+
+        .admin-dropdown-item {
+            display: block;
+            padding: 12px 16px;
+            color: #333;
+            text-decoration: none;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s;
+        }
+
+        .admin-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .admin-dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .admin-dropdown-item:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .admin-dropdown-item:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: none;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 15px 30px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Memory List */
+        .memory-list {
+            max-height: 500px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .memory-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .memory-content {
+            flex: 1;
+        }
+
+        .memory-text {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .memory-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .memory-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .icon-btn:hover {
+            background: #e0e0e0;
+        }
+
+        /* Query Interface */
+        .query-section textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .query-section textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .response-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .response-area.active {
+            display: block;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .response-text {
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+
+        .citations {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .citation-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .alert.active {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* File Upload */
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #5568d3;
+        }
+
+        .file-list {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            min-height: 60px;
+        }
+
+        .file-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .config-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .config-group input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .config-group {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                flex: 1;
+                min-width: 150px;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Modal -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-box">
+            <h2>Welcome to Agentic RAG</h2>
+            <p>Intelligent document search with personalized memory</p>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+            </div>
+
+            <div class="alert" id="authAlert"></div>
+
+            <!-- Login Form -->
+            <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn" id="loginBtn">Login</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="signupName" required placeholder="Your Name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signupPassword" required placeholder="••••••••" minlength="6">
+                </div>
+                <button type="submit" class="btn" id="signupBtn">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header" id="appHeader">
+            <div class="header-left">
+                <h1>🧠 Agentic RAG System</h1>
+                <p>Powered by Gemini File Search + Mem0 Memory</p>
+            </div>
+            <div class="header-right">
+                <!-- Admin Evaluation Dashboard Navigation -->
+                <div id="adminNav" class="admin-nav" style="display: none; margin-right: 20px;">
+                    <button class="admin-nav-btn" onclick="toggleEvalDropdown()" title="Research Evaluation Dashboard">
+                        🔬 Evaluation ▼
+                    </button>
+                    <div id="evalDropdown" class="admin-dropdown">
+                        <a href="/evaluation/dashboard" class="admin-dropdown-item">📊 Main Dashboard</a>
+                        <a href="/evaluation/runs" class="admin-dropdown-item">📋 All Evaluations</a>
+                        <a href="/evaluation/datasets" class="admin-dropdown-item">📚 Datasets</a>
+                    </div>
+                </div>
+
+                <div class="user-info">
+                    <div class="user-email" id="userEmail">user@example.com</div>
+                    <div class="user-status">● Online</div>
+                </div>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar" id="statsBar" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="statStores">0</div>
+                <div class="stat-label">Knowledge Bases</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statDocs">0</div>
+                <div class="stat-label">Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statMemories">0</div>
+                <div class="stat-label">Memories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statMessages">0</div>
+                <div class="stat-label">Messages</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('query')">💬 Ask Questions</button>
+                <button class="tab-btn" onclick="switchTab('upload')">📁 Upload Documents</button>
+                <button class="tab-btn" onclick="switchTab('memory')">🧠 My Memories</button>
+                <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
+            </div>
+
+            <!-- Query Tab -->
+            <div class="tab-content active" id="queryTab">
+                <div class="card query-section">
+                    <h2>Ask Questions About Your Documents</h2>
+                    <div class="alert" id="queryAlert"></div>
+
+                    <textarea id="questionInput" placeholder="Ask a question about your documents..."></textarea>
+
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn" onclick="askQuestion()" id="queryBtn">Ask Question</button>
+                        <button class="btn btn-secondary" onclick="clearConversation()">Clear History</button>
+                    </div>
+
+                    <div class="response-area" id="responseArea">
+                        <div class="response-header">
+                            <h3>Response</h3>
+                            <div>
+                                <span class="badge badge-primary" id="queryTypeBadge">GENERAL</span>
+                                <span class="badge badge-success" id="memoryBadge" style="display: none;">🧠 Using Memories</span>
+                            </div>
+                        </div>
+                        <div class="response-text" id="responseText"></div>
+                        <div class="citations" id="citationsArea" style="display: none;">
+                            <h4>📚 Citations</h4>
+                            <div id="citationsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Tab -->
+            <div class="tab-content" id="uploadTab">
+                <div class="card">
+                    <h2>Create Knowledge Base</h2>
+                    <div class="alert" id="uploadAlert"></div>
+
+                    <div class="form-group">
+                        <label>Knowledge Base Name (optional)</label>
+                        <input type="text" id="storeName" placeholder="My Documents">
+                    </div>
+
+                    <div class="config-group">
+                        <div class="form-group">
+                            <label>Max Tokens per Chunk</label>
+                            <input type="number" id="maxTokens" value="500" min="100" max="2000">
+                        </div>
+                        <div class="form-group">
+                            <label>Overlap Tokens</label>
+                            <input type="number" id="overlapTokens" value="50" min="0" max="500">
+                        </div>
+                    </div>
+
+                    <div class="file-input-wrapper">
+                        <label for="fileInput" class="file-input-label">
+                            📁 Choose Files to Upload
+                        </label>
+                        <input type="file" id="fileInput" multiple accept=".txt,.pdf,.doc,.docx,.xlsx,.pptx,.csv,.json,.md,.py,.js,.java,.cpp,.html,.xml,.ipynb">
+                    </div>
+
+                    <div class="file-list" id="fileList">
+                        <em>No files selected</em>
+                    </div>
+
+                    <button class="btn" onclick="uploadFiles()" id="uploadBtn" disabled>
+                        Upload to Knowledge Base
+                    </button>
+
+                    <!-- Existing Documents Section -->
+                    <div style="margin-top: 40px; border-top: 2px solid #e0e0e0; padding-top: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>📚 Your Documents (<span id="docCount">0</span>)</h3>
+                            <button class="btn btn-secondary" onclick="loadDocuments()" style="width: auto; padding: 8px 16px;">🔄 Refresh</button>
+                        </div>
+
+                        <div class="memory-list" id="documentList">
+                            <div class="empty-state">
+                                <p>No documents uploaded yet. Upload your first document above!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Tab -->
+            <div class="tab-content" id="memoryTab">
+                <div class="card">
+                    <h2>🧠 My Memories</h2>
+                    <div class="alert" id="memoryAlert"></div>
+
+                    <div class="form-group">
+                        <label>Add Manual Preference</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="preferenceInput" placeholder="I prefer detailed technical explanations..." style="flex: 1;">
+                            <button class="btn btn-success" onclick="addPreference()" style="width: auto; padding: 12px 24px;">Add</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin: 20px 0;">
+                        <button class="btn btn-secondary" onclick="loadMemories()" style="flex: 1;">🔄 Refresh</button>
+                        <button class="btn btn-danger" onclick="clearAllMemories()" style="flex: 1;">🗑️ Clear All</button>
+                        <button class="btn btn-success" onclick="exportMemories('csv')" style="flex: 1;">📥 Export CSV</button>
+                        <button class="btn btn-success" onclick="exportMemories('json')" style="flex: 1;">📥 Export JSON</button>
+                    </div>
+
+                    <div class="memory-list" id="memoryList">
+                        <div class="empty-state">
+                            <p>No memories yet. Start asking questions to build your memory!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-content" id="analyticsTab">
+                <div class="card">
+                    <h2>📊 Memory Analytics</h2>
+                    <div class="alert" id="analyticsAlert"></div>
+
+                    <div class="stats-bar" style="margin: 20px 0;">
+                        <div class="stat-card">
+                            <div class="stat-value" id="analyticsTotal">0</div>
+                            <div class="stat-label">Total Memories</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="analyticsActivity">0</div>
+                            <div class="stat-label">Recent Activity</div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="loadAnalytics()" style="margin-bottom: 20px;">🔄 Refresh Analytics</button>
+
+                    <h3>Query Type Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="queryTypeChart"></canvas>
+                    </div>
+
+                    <h3>Activity Over Time</h3>
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentUser = null;
+        let selectedFiles = [];
+        let selectedDocuments = [];
+        let queryTypeChartInstance = null;
+        let activityChartInstance = null;
+
+        // Check session on load
+        window.addEventListener('DOMContentLoaded', checkSession);
+
+        async function checkSession() {
+            try {
+                const response = await fetch('/api/auth/user');
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    showMainApp();
+                } else {
+                    showAuthModal();
+                }
+            } catch (error) {
+                showAuthModal();
+            }
+        }
+
+        function showAuthModal() {
+            document.getElementById('authModal').classList.add('active');
+            document.getElementById('appHeader').classList.remove('active');
+            document.getElementById('mainContent').classList.remove('active');
+            document.getElementById('statsBar').style.display = 'none';
+        }
+
+        function showMainApp() {
+            document.getElementById('authModal').classList.remove('active');
+            document.getElementById('appHeader').classList.add('active');
+            document.getElementById('mainContent').classList.add('active');
+            document.getElementById('statsBar').style.display = 'grid';
+
+            if (currentUser) {
+                document.getElementById('userEmail').textContent = currentUser.email;
+
+                // Show/hide admin features
+                const isAdmin = currentUser.is_admin || currentUser.role === 'admin';
+
+                // Hide upload tab for non-admins
+                const uploadBtn = document.querySelector('.tab-btn[onclick*="upload"]');
+                if (uploadBtn) {
+                    uploadBtn.style.display = isAdmin ? 'block' : 'none';
+                }
+
+                // Show admin badge if admin
+                if (isAdmin && !document.getElementById('adminBadge')) {
+                    const userEmail = document.getElementById('userEmail');
+                    const badge = document.createElement('span');
+                    badge.id = 'adminBadge';
+                    badge.style.cssText = 'background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 10px;';
+                    badge.textContent = 'ADMIN';
+                    userEmail.parentNode.insertBefore(badge, userEmail.nextSibling);
+                }
+
+                // Show/hide admin navigation for evaluation dashboard
+                const adminNav = document.getElementById('adminNav');
+                if (adminNav) {
+                    adminNav.style.display = isAdmin ? 'flex' : 'none';
+                }
+            }
+
+            updateStats();
+            loadMemories();
+            loadDocuments();  // Load persistent documents
+        }
+
+        function switchAuthTab(tab) {
+            const tabs = document.querySelectorAll('.auth-tab');
+            const forms = document.querySelectorAll('.auth-form');
+
+            tabs.forEach(t => t.classList.remove('active'));
+            forms.forEach(f => f.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Form').classList.add('active');
+
+            hideAlert('authAlert');
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const btn = document.getElementById('signupBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = 'Creating Account... <span class="loading"></span>';
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('authAlert', data.message, 'success');
+                    setTimeout(() => switchAuthTab('login'), 2000);
+                } else {
+                    showAlert('authAlert', data.error || 'Signup failed', 'error');
+                }
+            } catch (error) {
+                showAlert('authAlert', 'Network error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Create Account';
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = 'Logging in... <span class="loading"></span>';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.user;
+                    showMainApp();
+                } else {
+                    showAlert('authAlert', data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showAlert('authAlert', 'Network error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Login';
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                currentUser = null;
+                showAuthModal();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            if (tabName === 'memory') {
+                loadMemories();
+            } else if (tabName === 'analytics') {
+                loadAnalytics();
+            }
+        }
+
+        // File Upload
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files);
+            updateFileList();
+        });
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '<em>No files selected</em>';
+                uploadBtn.disabled = true;
+            } else {
+                fileList.innerHTML = selectedFiles.map(file =>
+                    `<div class="file-item">${file.name} (${formatFileSize(file.size)})</div>`
+                ).join('');
+                uploadBtn.disabled = false;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) return;
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = 'Uploading... <span class="loading"></span>';
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => formData.append('files[]', file));
+
+            const storeName = document.getElementById('storeName').value;
+            if (storeName) formData.append('store_name', storeName);
+
+            formData.append('max_tokens', document.getElementById('maxTokens').value);
+            formData.append('overlap_tokens', document.getElementById('overlapTokens').value);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('uploadAlert', data.message, 'success');
+                    selectedFiles = [];
+                    updateFileList();
+                    document.getElementById('fileInput').value = '';
+                    updateStats();
+                    loadDocuments();  // Refresh document list
+                } else {
+                    showAlert('uploadAlert', data.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Error: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = 'Upload to Knowledge Base';
+            }
+        }
+
+        // Load Documents
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/documents/list');
+                const data = await response.json();
+
+                const documentList = document.getElementById('documentList');
+                const docCount = document.getElementById('docCount');
+                const isAdmin = currentUser && (currentUser.is_admin || currentUser.role === 'admin');
+
+                if (data.success && data.documents && data.documents.length > 0) {
+                    docCount.textContent = data.documents.length;
+
+                    // Add bulk action buttons for admins
+                    let bulkActionsHTML = '';
+                    if (isAdmin) {
+                        bulkActionsHTML = `
+                            <div style="display: flex; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" id="selectAllDocs" onchange="toggleSelectAll(this.checked)">
+                                    <strong>Select All</strong>
+                                </label>
+                                <button class="btn btn-danger" onclick="bulkDeleteDocuments()"
+                                        style="width: auto; padding: 8px 16px; font-size: 0.9em;">
+                                    🗑️ Delete Selected (<span id="selectedCount">0</span>)
+                                </button>
+                                <button class="btn btn-secondary" onclick="bulkHideDocuments()"
+                                        style="width: auto; padding: 8px 16px; font-size: 0.9em;">
+                                    👁️‍🗨️ Hide Selected
+                                </button>
+                                <button class="btn btn-success" onclick="bulkShowDocuments()"
+                                        style="width: auto; padding: 8px 16px; font-size: 0.9em;">
+                                    👁️ Show Selected
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    documentList.innerHTML = bulkActionsHTML + data.documents.map(doc => {
+                        const uploadDate = new Date(doc.uploaded_at).toLocaleDateString();
+                        const fileSize = formatFileSize(doc.file_size);
+                        const isVisible = doc.is_visible !== false;
+                        const visibilityBadge = !isVisible ? '<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 8px;">HIDDEN</span>' : '';
+
+                        // Admin controls
+                        let adminControls = '';
+                        if (isAdmin) {
+                            const checkboxHTML = `<input type="checkbox" class="doc-checkbox" value="${doc.id}" onchange="updateSelectedCount()" style="margin-right: 10px; width: 18px; height: 18px;">`;
+                            const visibilityBtn = isVisible ?
+                                `<button class="btn btn-secondary" onclick="hideDocument('${doc.id}')" style="width: auto; padding: 6px 12px; font-size: 0.85em;">👁️‍🗨️ Hide</button>` :
+                                `<button class="btn btn-success" onclick="showDocument('${doc.id}')" style="width: auto; padding: 6px 12px; font-size: 0.85em;">👁️ Show</button>`;
+                            const deleteBtn = `<button class="btn btn-danger" onclick="deleteDocument('${doc.id}')" style="width: auto; padding: 6px 12px; font-size: 0.85em;">🗑️ Delete</button>`;
+
+                            adminControls = `
+                                ${checkboxHTML}
+                                <div style="display: flex; gap: 8px;">
+                                    ${visibilityBtn}
+                                    ${deleteBtn}
+                                </div>
+                            `;
+                        }
+
+                        return `
+                            <div class="memory-item">
+                                ${adminControls}
+                                <div style="flex: 1;">
+                                    <strong>📄 ${doc.file_name}</strong>${visibilityBadge}
+                                    <div style="color: #666; font-size: 0.9em; margin-top: 4px;">
+                                        ${fileSize} • Uploaded ${uploadDate}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    docCount.textContent = '0';
+                    documentList.innerHTML = '<div class="empty-state"><p>No documents uploaded yet. Upload your first document above!</p></div>';
+                }
+
+                selectedDocuments = [];
+                updateSelectedCount();
+            } catch (error) {
+                console.error('Error loading documents:', error);
+            }
+        }
+
+        // Document selection helpers
+        function toggleSelectAll(checked) {
+            const checkboxes = document.querySelectorAll('.doc-checkbox');
+            checkboxes.forEach(cb => cb.checked = checked);
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
+            selectedDocuments = Array.from(checkboxes).map(cb => cb.value);
+            const countElement = document.getElementById('selectedCount');
+            if (countElement) {
+                countElement.textContent = selectedDocuments.length;
+            }
+        }
+
+        // Delete Document
+        async function deleteDocument(documentId) {
+            if (!confirm('Are you sure you want to delete this document?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/documents/delete/${documentId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('uploadAlert', 'Document deleted successfully', 'success');
+                    loadDocuments();
+                    updateStats();
+                } else {
+                    showAlert('uploadAlert', data.error || 'Failed to delete document', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Bulk Delete Documents
+        async function bulkDeleteDocuments() {
+            if (selectedDocuments.length === 0) {
+                showAlert('uploadAlert', 'No documents selected', 'error');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ${selectedDocuments.length} document(s)?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/documents/bulk-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ document_ids: selectedDocuments })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('uploadAlert', data.message, 'success');
+                    loadDocuments();
+                    updateStats();
+                } else {
+                    showAlert('uploadAlert', data.error || 'Failed to delete documents', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Hide Document
+        async function hideDocument(documentId) {
+            try {
+                const response = await fetch(`/api/documents/hide/${documentId}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('uploadAlert', 'Document hidden successfully', 'success');
+                    loadDocuments();
+                } else {
+                    showAlert('uploadAlert', data.error || 'Failed to hide document', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Show Document
+        async function showDocument(documentId) {
+            try {
+                const response = await fetch(`/api/documents/show/${documentId}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('uploadAlert', 'Document is now visible', 'success');
+                    loadDocuments();
+                } else {
+                    showAlert('uploadAlert', data.error || 'Failed to show document', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Bulk Hide Documents
+        async function bulkHideDocuments() {
+            if (selectedDocuments.length === 0) {
+                showAlert('uploadAlert', 'No documents selected', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/documents/bulk-hide', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ document_ids: selectedDocuments })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('uploadAlert', data.message, 'success');
+                    loadDocuments();
+                } else {
+                    showAlert('uploadAlert', data.error || 'Failed to hide documents', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Bulk Show Documents
+        async function bulkShowDocuments() {
+            if (selectedDocuments.length === 0) {
+                showAlert('uploadAlert', 'No documents selected', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/documents/bulk-show', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ document_ids: selectedDocuments })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('uploadAlert', data.message, 'success');
+                    loadDocuments();
+                } else {
+                    showAlert('uploadAlert', data.error || 'Failed to show documents', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Query
+        async function askQuestion() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) {
+                showAlert('queryAlert', 'Please enter a question', 'error');
+                return;
+            }
+
+            const queryBtn = document.getElementById('queryBtn');
+            queryBtn.disabled = true;
+            queryBtn.innerHTML = 'Searching... <span class="loading"></span>';
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResponse(data);
+                    document.getElementById('questionInput').value = '';
+                    updateStats();
+                } else {
+                    showAlert('queryAlert', data.error || 'Query failed', 'error');
+                }
+            } catch (error) {
+                showAlert('queryAlert', 'Error: ' + error.message, 'error');
+            } finally {
+                queryBtn.disabled = false;
+                queryBtn.innerHTML = 'Ask Question';
+            }
+        }
+
+        function displayResponse(data) {
+            const responseArea = document.getElementById('responseArea');
+            const responseText = document.getElementById('responseText');
+            const queryTypeBadge = document.getElementById('queryTypeBadge');
+            const memoryBadge = document.getElementById('memoryBadge');
+            const citationsArea = document.getElementById('citationsArea');
+            const citationsList = document.getElementById('citationsList');
+
+            responseArea.classList.add('active');
+            responseText.textContent = data.answer;
+            queryTypeBadge.textContent = data.query_type;
+
+            // Show memory usage
+            if (data.memories_used > 0) {
+                memoryBadge.style.display = 'inline-block';
+                memoryBadge.textContent = `🧠 Used ${data.memories_used} memories`;
+            } else {
+                memoryBadge.style.display = 'none';
+            }
+
+            // Show citations
+            if (data.citations && data.citations.length > 0) {
+                citationsArea.style.display = 'block';
+                citationsList.innerHTML = data.citations.map(citation => `
+                    <div class="citation-item">
+                        <div style="font-weight: 600; color: #667eea; margin-bottom: 5px;">
+                            [${citation.index}] ${citation.source}
+                        </div>
+                        <div style="color: #666; font-style: italic;">
+                            ${citation.snippet}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                citationsArea.style.display = 'none';
+            }
+        }
+
+        async function clearConversation() {
+            try {
+                const response = await fetch('/clear-conversation', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('queryAlert', 'Conversation cleared', 'success');
+                    document.getElementById('responseArea').classList.remove('active');
+                    updateStats();
+                }
+            } catch (error) {
+                showAlert('queryAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Memory Management
+        async function loadMemories() {
+            try {
+                const response = await fetch('/api/memory/all?limit=50');
+                const data = await response.json();
+
+                const memoryList = document.getElementById('memoryList');
+
+                if (data.memories && data.memories.length > 0) {
+                    memoryList.innerHTML = data.memories.map((memory, index) => {
+                        const text = memory.memory || memory.text || JSON.stringify(memory);
+                        const metadata = memory.metadata || {};
+
+                        return `
+                            <div class="memory-item">
+                                <div class="memory-content">
+                                    <div class="memory-text">${text}</div>
+                                    <div class="memory-meta">
+                                        Type: ${metadata.query_type || 'N/A'} |
+                                        ${metadata.timestamp || 'No timestamp'}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    memoryList.innerHTML = '<div class="empty-state"><p>No memories yet. Start asking questions to build your memory!</p></div>';
+                }
+
+                updateStats();
+            } catch (error) {
+                showAlert('memoryAlert', 'Error loading memories: ' + error.message, 'error');
+            }
+        }
+
+        async function addPreference() {
+            const preference = document.getElementById('preferenceInput').value.trim();
+            if (!preference) return;
+
+            try {
+                const response = await fetch('/api/memory/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ preference })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('memoryAlert', 'Preference added successfully', 'success');
+                    document.getElementById('preferenceInput').value = '';
+                    loadMemories();
+                } else {
+                    showAlert('memoryAlert', data.error || 'Failed to add preference', 'error');
+                }
+            } catch (error) {
+                showAlert('memoryAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        async function clearAllMemories() {
+            if (!confirm('Are you sure you want to clear all memories? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/memory/clear', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('memoryAlert', 'All memories cleared', 'success');
+                    loadMemories();
+                } else {
+                    showAlert('memoryAlert', data.error || 'Failed to clear memories', 'error');
+                }
+            } catch (error) {
+                showAlert('memoryAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        async function exportMemories(format) {
+            try {
+                window.location.href = `/api/memory/export?format=${format}`;
+                showAlert('memoryAlert', `Downloading memories as ${format.toUpperCase()}...`, 'success');
+            } catch (error) {
+                showAlert('memoryAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Analytics
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/api/memory/analytics');
+                const data = await response.json();
+
+                if (data.success) {
+                    const analytics = data.analytics;
+
+                    // Update stats
+                    document.getElementById('analyticsTotal').textContent = analytics.total_memories;
+                    document.getElementById('analyticsActivity').textContent = analytics.recent_activity;
+
+                    // Query Type Chart
+                    const queryTypes = analytics.query_type_distribution;
+                    if (Object.keys(queryTypes).length > 0) {
+                        createQueryTypeChart(queryTypes);
+                    }
+
+                    // Activity Chart
+                    const activity = analytics.activity_by_day;
+                    if (Object.keys(activity).length > 0) {
+                        createActivityChart(activity);
+                    }
+                } else {
+                    showAlert('analyticsAlert', data.error || 'Failed to load analytics', 'error');
+                }
+            } catch (error) {
+                showAlert('analyticsAlert', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        function createQueryTypeChart(data) {
+            const ctx = document.getElementById('queryTypeChart');
+
+            if (queryTypeChartInstance) {
+                queryTypeChartInstance.destroy();
+            }
+
+            queryTypeChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{
+                        data: Object.values(data),
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                            '#43e97b', '#fa709a', '#fee140', '#30cfd0'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createActivityChart(data) {
+            const ctx = document.getElementById('activityChart');
+
+            if (activityChartInstance) {
+                activityChartInstance.destroy();
+            }
+
+            activityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{
+                        label: 'Queries per Day',
+                        data: Object.values(data),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Stats
+        async function updateStats() {
+            try {
+                // Get document stats
+                const docResponse = await fetch('/api/documents/stats');
+                const docData = await docResponse.json();
+
+                // Get memory count
+                let memoryCount = 0;
+                try {
+                    const memResponse = await fetch('/api/memory/all?limit=1000');
+                    const memData = await memResponse.json();
+                    memoryCount = memData.count || 0;
+                } catch (e) {
+                    console.log('Memory not available yet');
+                }
+
+                document.getElementById('statStores').textContent = docData.store_exists ? 1 : 0;
+                document.getElementById('statDocs').textContent = docData.total_documents || 0;
+                document.getElementById('statMemories').textContent = memoryCount;
+                document.getElementById('statMessages').textContent = document.querySelectorAll('#conversationHistory .message').length || 0;
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+
+        // Utilities
+        function showAlert(id, message, type) {
+            const alert = document.getElementById(id);
+            alert.textContent = message;
+            alert.className = `alert alert-${type} active`;
+
+            setTimeout(() => {
+                alert.classList.remove('active');
+            }, 5000);
+        }
+
+        function hideAlert(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Toggle evaluation dropdown menu
+        function toggleEvalDropdown() {
+            const dropdown = document.getElementById('evalDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(e) {
+            if (!e.target.matches('.admin-nav-btn')) {
+                const dropdown = document.getElementById('evalDropdown');
+                if (dropdown && dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        });
+
+        // Enable Enter to submit question
+        document.getElementById('questionInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+    </script>
+</body>
+</html>

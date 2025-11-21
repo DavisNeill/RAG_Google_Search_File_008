@@ -1,0 +1,152 @@
+# Agentic RAG System Requirements
+# Google Gemini API
+google-genai>=0.2.0
+
+# Memory Layer (uses Google Gemini embeddings - no OpenAI needed!)
+mem0ai>=0.1.0
+qdrant-client>=1.7.0
+
+# Web Framework
+Flask>=3.0.0
+werkzeug>=3.0.0
+Flask-CORS>=4.0.0
+
+# Authentication & Session Management
+supabase>=2.0.0
+PyJWT>=2.8.0
+
+# Data handling
+pandas>=2.0.0
+
+# Optional dependencies for enhanced functionality
+python-dotenv>=1.0.0
+
+# ============================================================================
+# TIER 1: Production Essentials
+# ============================================================================
+
+# Rate Limiting
+Flask-Limiter>=3.5.0
+redis>=5.0.0
+
+# Logging & Monitoring
+structlog>=23.2.0
+python-json-logger>=2.0.7
+
+# ============================================================================
+# TIER 2: Performance & UX
+# ============================================================================
+
+# Caching Layer
+Flask-Caching>=2.1.0
+
+# WebSocket Support
+Flask-SocketIO>=5.3.5
+python-socketio>=5.10.0
+eventlet>=0.33.3
+
+# ============================================================================
+# TIER 3: Advanced Features
+# ============================================================================
+
+# Document Versioning (uses existing database)
+# No additional dependencies needed
+
+# ============================================================================
+# Production Server
+# ============================================================================
+
+# WSGI Server
+gunicorn>=21.2.0
+
+# ============================================================================
+# RESEARCH EVALUATION FRAMEWORK (For Journal Publication)
+# ============================================================================
+
+# RAG Evaluation Framework
+ragas>=0.1.0
+
+# Traditional IR Metrics
+scikit-learn>=1.3.0
+rank-bm25>=0.2.2
+
+# Semantic Similarity Metrics
+bert-score>=0.3.13
+sentence-transformers>=2.2.2
+
+# Statistical Analysis
+scipy>=1.11.0
+statsmodels>=0.14.0
+numpy>=1.24.0
+
+# Visualization for Papers
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.17.0
+
+# LaTeX Export
+tabulate>=0.9.0
+
+# Dataset Handling
+datasets>=2.14.0
+
+# NLP Metrics
+nltk>=3.8.0
+rouge-score>=0.1.2
+
+# Human Evaluation Tools
+flask-wtf>=1.2.0
+
+# Experiment Tracking (Optional)
+# mlflow>=2.8.0
+# wandb>=0.16.0
+
+# ============================================================================
+# TIER 1-3 ARCHITECTURE IMPROVEMENTS (New Features)
+# ============================================================================
+
+# NOTE: Most dependencies for new features are already included above:
+# - Hybrid Search (BM25 + Dense): rank-bm25, numpy (already included)
+# - Citation System: No additional deps (uses existing)
+# - Embedding Cache: redis (already included)
+# - Re-ranking with Cross-Encoders: sentence-transformers (already included)
+# - Query Rewriting/Expansion: Uses existing LLM (no new deps)
+# - Streaming Responses: Flask-SocketIO, eventlet (already included)
+# - Multi-hop Reasoning: Uses existing components (no new deps)
+# - Self-Reflection: Uses existing LLM and metrics (no new deps)
+# - Experiment Tracking: Uses existing database and JSON (no new deps)
+
+# All dependencies for Tier 1-3 improvements are satisfied by the requirements above!
+
+# ============================================================================
+# TIER 4-5 ADVANCED IMPROVEMENTS (New Features)
+# ============================================================================
+
+# Graph-Enhanced RAG (GraphRAG)
+networkx>=3.0
+
+# NOTE: Other Tier 4-5 features use existing dependencies:
+# - Chain-of-Thought: No new deps (prompting technique)
+# - Adaptive Retrieval: No new deps (decision logic)
+# - HyDE: No new deps (uses existing LLM)
+# - Parent Document Retrieval: No new deps (uses existing retrieval)
+
+# All dependencies for Tier 4-5 improvements are satisfied!
+
+# ============================================================================
+# PYDANTIC AI INTEGRATION (Tier 6 Enhancement)
+# ============================================================================
+
+# Pydantic AI for structured outputs, model routing, and observability
+pydantic-ai>=0.0.14
+pydantic>=2.0.0
+
+# Logfire for observability (local mode, no cloud required)
+logfire>=0.1.0
+
+# NOTE: Pydantic AI features integrated:
+# - Structured Output Validation: Guaranteed valid responses with auto-retry
+# - Model Router: Smart model selection based on query complexity
+# - Logfire Observability: Deep tracing and debugging (local-only mode)
+
+# All dependencies for Pydantic AI integration are satisfied!

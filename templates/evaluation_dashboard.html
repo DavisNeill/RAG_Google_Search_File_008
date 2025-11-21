@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Evaluation Dashboard</title>
+
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        .metric-card {
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+        .tab-button.active {
+            border-bottom: 3px solid #3b82f6;
+            color: #3b82f6;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">🔬 Research Evaluation Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Scientific metrics for journal publication</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="runNewEvaluation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                        <span>▶️</span> Run New Evaluation
+                    </button>
+                    <button onclick="window.location.href='/evaluation/runs'" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                        📊 View All Runs
+                    </button>
+                    <button onclick="window.location.href='/'" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
+                        ← Back to Main
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+
+        <!-- Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Overall Score Card -->
+            <div class="bg-white rounded-lg shadow p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Overall Score</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2" id="overall-score">--</p>
+                        <p class="text-sm text-green-600 mt-1" id="overall-trend">--</p>
+                    </div>
+                    <div class="text-4xl">🎯</div>
+                </div>
+            </div>
+
+            <!-- RAGAS Score Card -->
+            <div class="bg-white rounded-lg shadow p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">RAGAS Score</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2" id="ragas-score">--</p>
+                        <p class="text-sm text-blue-600 mt-1" id="ragas-trend">--</p>
+                    </div>
+                    <div class="text-4xl">📈</div>
+                </div>
+            </div>
+
+            <!-- IR Metrics Card -->
+            <div class="bg-white rounded-lg shadow p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">IR Metrics</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2" id="ir-score">--</p>
+                        <p class="text-sm text-purple-600 mt-1" id="ir-trend">--</p>
+                    </div>
+                    <div class="text-4xl">🔍</div>
+                </div>
+            </div>
+
+            <!-- Latency Card -->
+            <div class="bg-white rounded-lg shadow p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Avg Latency</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2" id="latency">--</p>
+                        <p class="text-sm text-gray-600 mt-1">milliseconds</p>
+                    </div>
+                    <div class="text-4xl">⚡</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Trends Chart -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">📊 Performance Over Time</h2>
+            <div class="chart-container">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabs for Different Views -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px">
+                    <button class="tab-button active px-6 py-4 text-sm font-medium" onclick="showTab('comparisons')">
+                        System Comparisons
+                    </button>
+                    <button class="tab-button px-6 py-4 text-sm font-medium" onclick="showTab('ablations')">
+                        Ablation Studies
+                    </button>
+                    <button class="tab-button px-6 py-4 text-sm font-medium" onclick="showTab('metrics')">
+                        Detailed Metrics
+                    </button>
+                    <button class="tab-button px-6 py-4 text-sm font-medium" onclick="showTab('errors')">
+                        Error Analysis
+                    </button>
+                    <button class="tab-button px-6 py-4 text-sm font-medium" onclick="showTab('statistical')">
+                        Statistical Tests
+                    </button>
+                    <button class="tab-button px-6 py-4 text-sm font-medium" onclick="showTab('efficiency')">
+                        Efficiency
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- System Comparisons Tab -->
+                <div id="comparisons-tab" class="tab-content">
+                    <h3 class="text-lg font-semibold mb-4">🎯 System Performance Comparison</h3>
+                    <p class="text-sm text-gray-600 mb-4">Compare your Agentic RAG against baseline systems</p>
+
+                    <div class="chart-container">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+
+                    <div id="baseline-details" class="mt-6 space-y-3">
+                        <!-- Baseline comparison details will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Ablation Studies Tab -->
+                <div id="ablations-tab" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold mb-4">🔧 Component Contribution Analysis</h3>
+                    <p class="text-sm text-gray-600 mb-4">Performance impact when removing components</p>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="chart-container">
+                            <canvas id="ablationScoresChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="ablationDropsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="ablation-table" class="mt-6 overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Configuration</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drop</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Drop</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Components Removed</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ablation-tbody" class="bg-white divide-y divide-gray-200">
+                                <!-- Ablation rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Detailed Metrics Tab -->
+                <div id="metrics-tab" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold mb-4">📈 Detailed Metrics Breakdown</h3>
+
+                    <!-- RAGAS Metrics -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3">RAGAS Metrics</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="ragas-metrics">
+                            <!-- RAGAS metric cards will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- IR Metrics -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3">Information Retrieval Metrics</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Metric</th>
+                                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">k=1</th>
+                                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">k=3</th>
+                                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">k=5</th>
+                                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">k=10</th>
+                                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">k=20</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ir-metrics-tbody" class="bg-white divide-y divide-gray-200">
+                                    <!-- IR metric rows will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Semantic Similarity Metrics -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-3">Semantic Similarity Metrics</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="semantic-metrics">
+                            <!-- Semantic metric cards will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Analysis Tab -->
+                <div id="errors-tab" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold mb-4">⚠️ Error Analysis</h3>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Error Summary Cards -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-700 mb-3">Error Distribution by Type</h4>
+                            <div class="chart-container" style="height: 250px;">
+                                <canvas id="errorTypeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-700 mb-3">Error Severity Distribution</h4>
+                            <div class="chart-container" style="height: 250px;">
+                                <canvas id="errorSeverityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Examples -->
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-3">Error Examples</h4>
+                        <div id="error-examples" class="space-y-4">
+                            <!-- Error examples will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistical Tests Tab -->
+                <div id="statistical-tab" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold mb-4">📊 Statistical Significance Tests</h3>
+                    <p class="text-sm text-gray-600 mb-4">Pairwise comparisons with p-values and effect sizes</p>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">System A</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">System B</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">t-statistic</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">p-value</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Significant?</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cohen's d</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effect Size</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statistical-tbody" class="bg-white divide-y divide-gray-200">
+                                <!-- Statistical test rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Efficiency Tab -->
+                <div id="efficiency-tab" class="tab-content hidden">
+                    <h3 class="text-lg font-semibold mb-4">⚡ Efficiency Metrics</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- Latency Card -->
+                        <div class="bg-blue-50 rounded-lg p-6">
+                            <h4 class="font-semibold text-blue-900 mb-4">Latency Analysis</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Average:</span>
+                                    <span class="font-semibold" id="eff-avg-latency">--</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Median:</span>
+                                    <span class="font-semibold" id="eff-median-latency">--</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">P95:</span>
+                                    <span class="font-semibold" id="eff-p95-latency">--</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">P99:</span>
+                                    <span class="font-semibold" id="eff-p99-latency">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Token Usage Card -->
+                        <div class="bg-green-50 rounded-lg p-6">
+                            <h4 class="font-semibold text-green-900 mb-4">Token Usage</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Avg per Query:</span>
+                                    <span class="font-semibold" id="eff-avg-tokens">--</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Total Used:</span>
+                                    <span class="font-semibold" id="eff-total-tokens">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cost Card -->
+                        <div class="bg-yellow-50 rounded-lg p-6">
+                            <h4 class="font-semibold text-yellow-900 mb-4">Estimated Cost</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Total:</span>
+                                    <span class="font-semibold text-2xl" id="eff-total-cost">--</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Per Query:</span>
+                                    <span class="font-semibold" id="eff-avg-cost">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance vs Latency Chart -->
+                    <div class="bg-white rounded-lg border p-6">
+                        <h4 class="font-semibold text-gray-700 mb-4">Performance vs Latency Trade-off</h4>
+                        <div class="chart-container">
+                            <canvas id="perfLatencyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Query Type Performance -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">🔍 Performance by Query Type</h2>
+            <div class="chart-container">
+                <canvas id="queryTypeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Export Actions -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">📥 Export Results</h2>
+            <p class="text-sm text-gray-600 mb-4">Download evaluation results for your research paper</p>
+
+            <div class="flex gap-4">
+                <button onclick="exportLatex()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                    📄 Export LaTeX Tables
+                </button>
+                <button onclick="exportJSON()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    📊 Export JSON Data
+                </button>
+                <button onclick="exportPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                    📑 Generate PDF Report
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Running New Evaluation -->
+    <div id="runEvalModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Run New Evaluation</h3>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Experiment Name</label>
+                        <input type="text" id="experiment-name" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="e.g., Agentic RAG v2.1">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Dataset</label>
+                        <select id="dataset-select" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">Select dataset...</option>
+                            <option value="eval_dataset_v1">Evaluation Dataset v1</option>
+                            <option value="eval_dataset_v2">Evaluation Dataset v2</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="run-baselines" checked class="mr-2">
+                        <label for="run-baselines" class="text-sm text-gray-700">Run baseline comparisons</label>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="run-ablations" checked class="mr-2">
+                        <label for="run-ablations" class="text-sm text-gray-700">Run ablation studies</label>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button onclick="startEvaluation()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        Start Evaluation
+                    </button>
+                    <button onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentEvaluationId = null;
+        let charts = {};
+
+        // Load dashboard data on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            loadDashboardStats();
+            loadPerformanceTrends();
+        });
+
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Load dashboard statistics
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/evaluation/api/stats');
+                const data = await response.json();
+
+                if (data.latest_evaluation) {
+                    currentEvaluationId = data.latest_evaluation.id;
+
+                    // Update overview cards
+                    document.getElementById('overall-score').textContent =
+                        (data.latest_evaluation.overall_score || 0).toFixed(3);
+                    document.getElementById('ragas-score').textContent =
+                        (data.latest_evaluation.ragas_score || 0).toFixed(3);
+                    document.getElementById('ir-score').textContent =
+                        (data.latest_evaluation.ir_score || 0).toFixed(3);
+
+                    // Load detailed data for latest evaluation
+                    loadEvaluationDetails(currentEvaluationId);
+                }
+
+                // Show trends
+                if (data.avg_overall_score !== undefined) {
+                    // Calculate trends (simplified - should compare with previous period)
+                    document.getElementById('overall-trend').textContent = '↑ Trending up';
+                    document.getElementById('ragas-trend').textContent = '↑ Trending up';
+                    document.getElementById('ir-trend').textContent = '→ Stable';
+                }
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+
+        // Load performance trends
+        async function loadPerformanceTrends() {
+            try {
+                const response = await fetch('/evaluation/api/trends?days=30');
+                const data = await response.json();
+
+                if (data.trends && data.trends.length > 0) {
+                    renderTrendsChart(data.trends);
+                }
+            } catch (error) {
+                console.error('Error loading performance trends:', error);
+            }
+        }
+
+        // Load evaluation details
+        async function loadEvaluationDetails(evaluationId) {
+            try {
+                const response = await fetch(`/evaluation/api/runs/${evaluationId}`);
+                const data = await response.json();
+
+                // Load baselines
+                if (data.baselines) {
+                    renderBaselineComparisons(data.baselines, data.run.overall_score);
+                }
+
+                // Load ablations
+                if (data.ablations) {
+                    renderAblationStudies(data.ablations, data.run.overall_score);
+                }
+
+                // Load detailed metrics
+                if (data.metrics) {
+                    renderDetailedMetrics(data.metrics);
+                }
+
+                // Load error analysis
+                if (data.error_summary) {
+                    renderErrorAnalysis(data.error_summary);
+                }
+
+                // Load statistical tests
+                if (data.statistical_tests) {
+                    renderStatisticalTests(data.statistical_tests);
+                }
+
+                // Load efficiency metrics
+                if (data.efficiency) {
+                    renderEfficiencyMetrics(data.efficiency);
+                }
+
+                // Load query type performance
+                if (data.query_type_performance) {
+                    renderQueryTypePerformance(data.query_type_performance);
+                }
+            } catch (error) {
+                console.error('Error loading evaluation details:', error);
+            }
+        }
+
+        // Render charts and data (implementation continues in next part due to length)
+        function renderTrendsChart(trends) {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+
+            if (charts.trends) {
+                charts.trends.destroy();
+            }
+
+            charts.trends = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trends.map(t => t.evaluation_date),
+                    datasets: [
+                        {
+                            label: 'Overall Score',
+                            data: trends.map(t => t.avg_overall_score),
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                        },
+                        {
+                            label: 'RAGAS Score',
+                            data: trends.map(t => t.avg_ragas_score),
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)'
+                        },
+                        {
+                            label: 'IR Score',
+                            data: trends.map(t => t.avg_ir_score),
+                            borderColor: 'rgb(168, 85, 247)',
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderBaselineComparisons(baselines, mainScore) {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+            if (charts.comparison) {
+                charts.comparison.destroy();
+            }
+
+            const allSystems = [{name: 'Agentic RAG', score: mainScore}, ...baselines.map(b => ({name: b.baseline_name, score: b.baseline_score}))];
+
+            charts.comparison = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: allSystems.map(s => s.name),
+                    datasets: [{
+                        label: 'Score',
+                        data: allSystems.map(s => s.score),
+                        backgroundColor: allSystems.map((s, i) => i === 0 ? 'rgb(34, 197, 94)' : 'rgb(156, 163, 175)')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0
+                        }
+                    }
+                }
+            });
+
+            // Render baseline details
+            const detailsDiv = document.getElementById('baseline-details');
+            detailsDiv.innerHTML = baselines.map(b => `
+                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <span class="font-semibold">${b.baseline_name}</span>
+                        <span class="text-sm text-gray-600 ml-2">Score: ${b.baseline_score.toFixed(3)}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-semibold ${b.performance_gap > 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${b.performance_gap > 0 ? '+' : ''}${b.performance_gap.toFixed(3)}
+                        </span>
+                        <span class="text-xs text-gray-500 ml-2">(${b.relative_improvement.toFixed(1)}%)</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAblationStudies(ablations, fullScore) {
+            // Render charts
+            const scoresCtx = document.getElementById('ablationScoresChart').getContext('2d');
+            const dropsCtx = document.getElementById('ablationDropsChart').getContext('2d');
+
+            if (charts.ablationScores) charts.ablationScores.destroy();
+            if (charts.ablationDrops) charts.ablationDrops.destroy();
+
+            charts.ablationScores = new Chart(scoresCtx, {
+                type: 'bar',
+                data: {
+                    labels: ablations.map(a => a.configuration_name),
+                    datasets: [{
+                        label: 'Score',
+                        data: ablations.map(a => a.score),
+                        backgroundColor: 'rgb(59, 130, 246)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 1.0
+                        }
+                    }
+                }
+            });
+
+            charts.ablationDrops = new Chart(dropsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ablations.map(a => a.configuration_name),
+                    datasets: [{
+                        label: 'Performance Drop',
+                        data: ablations.map(a => a.performance_drop),
+                        backgroundColor: 'rgb(239, 68, 68)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y'
+                }
+            });
+
+            // Render table
+            const tbody = document.getElementById('ablation-tbody');
+            tbody.innerHTML = ablations.map(a => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${a.configuration_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${a.score.toFixed(3)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">${a.performance_drop.toFixed(3)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">${a.relative_drop_percent.toFixed(1)}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${a.components_removed.join(', ')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderDetailedMetrics(metrics) {
+            // RAGAS metrics
+            const ragasDiv = document.getElementById('ragas-metrics');
+            const ragasMetrics = [
+                {name: 'Faithfulness', value: metrics.ragas_faithfulness},
+                {name: 'Answer Relevancy', value: metrics.ragas_answer_relevancy},
+                {name: 'Context Precision', value: metrics.ragas_context_precision},
+                {name: 'Context Recall', value: metrics.ragas_context_recall},
+                {name: 'Context Relevancy', value: metrics.ragas_context_relevancy}
+            ];
+
+            ragasDiv.innerHTML = ragasMetrics.map(m => `
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <p class="text-xs font-medium text-gray-600 mb-1">${m.name}</p>
+                    <p class="text-2xl font-bold text-blue-900">${(m.value || 0).toFixed(3)}</p>
+                </div>
+            `).join('');
+
+            // IR metrics table
+            const irTbody = document.getElementById('ir-metrics-tbody');
+            const irMetricRows = [
+                {name: 'Precision@k', values: [metrics.precision_at_1, metrics.precision_at_3, metrics.precision_at_5, metrics.precision_at_10, metrics.precision_at_20]},
+                {name: 'Recall@k', values: [metrics.recall_at_1, metrics.recall_at_3, metrics.recall_at_5, metrics.recall_at_10, metrics.recall_at_20]},
+                {name: 'NDCG@k', values: [metrics.ndcg_at_1, metrics.ndcg_at_3, metrics.ndcg_at_5, metrics.ndcg_at_10, metrics.ndcg_at_20]},
+                {name: 'F1@k', values: [metrics.f1_at_1, metrics.f1_at_3, metrics.f1_at_5, metrics.f1_at_10, metrics.f1_at_20]}
+            ];
+
+            irTbody.innerHTML = irMetricRows.map(row => `
+                <tr>
+                    <td class="px-4 py-2 font-medium text-gray-900">${row.name}</td>
+                    ${row.values.map(v => `<td class="px-4 py-2 text-center text-gray-700">${(v || 0).toFixed(3)}</td>`).join('')}
+                </tr>
+            `).join('');
+
+            // Add MRR and MAP rows
+            irTbody.innerHTML += `
+                <tr>
+                    <td class="px-4 py-2 font-medium text-gray-900">MRR</td>
+                    <td colspan="5" class="px-4 py-2 text-center text-gray-700">${(metrics.mrr || 0).toFixed(3)}</td>
+                </tr>
+                <tr>
+                    <td class="px-4 py-2 font-medium text-gray-900">MAP</td>
+                    <td colspan="5" class="px-4 py-2 text-center text-gray-700">${(metrics.map_score || 0).toFixed(3)}</td>
+                </tr>
+            `;
+
+            // Semantic metrics
+            const semanticDiv = document.getElementById('semantic-metrics');
+            const semanticMetrics = [
+                {name: 'BERTScore P', value: metrics.bertscore_precision},
+                {name: 'BERTScore R', value: metrics.bertscore_recall},
+                {name: 'BERTScore F1', value: metrics.bertscore_f1},
+                {name: 'ROUGE-L F1', value: metrics.rouge_l_f1},
+                {name: 'BLEU-1', value: metrics.bleu_1},
+                {name: 'BLEU-2', value: metrics.bleu_2},
+                {name: 'BLEU-3', value: metrics.bleu_3},
+                {name: 'BLEU-4', value: metrics.bleu_4}
+            ];
+
+            semanticDiv.innerHTML = semanticMetrics.map(m => `
+                <div class="bg-purple-50 rounded-lg p-4 text-center">
+                    <p class="text-xs font-medium text-gray-600 mb-1">${m.name}</p>
+                    <p class="text-xl font-bold text-purple-900">${(m.value || 0).toFixed(3)}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderErrorAnalysis(errorSummary) {
+            // Error type chart
+            const typeCtx = document.getElementById('errorTypeChart').getContext('2d');
+            if (charts.errorType) charts.errorType.destroy();
+
+            charts.errorType = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(errorSummary.by_type || {}),
+                    datasets: [{
+                        data: Object.values(errorSummary.by_type || {}),
+                        backgroundColor: [
+                            'rgb(239, 68, 68)',
+                            'rgb(249, 115, 22)',
+                            'rgb(234, 179, 8)',
+                            'rgb(34, 197, 94)',
+                            'rgb(59, 130, 246)',
+                            'rgb(168, 85, 247)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Error severity chart
+            const severityCtx = document.getElementById('errorSeverityChart').getContext('2d');
+            if (charts.errorSeverity) charts.errorSeverity.destroy();
+
+            charts.errorSeverity = new Chart(severityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(errorSummary.by_severity || {}),
+                    datasets: [{
+                        data: Object.values(errorSummary.by_severity || {}),
+                        backgroundColor: [
+                            'rgb(34, 197, 94)',
+                            'rgb(234, 179, 8)',
+                            'rgb(239, 68, 68)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function renderStatisticalTests(tests) {
+            const tbody = document.getElementById('statistical-tbody');
+            tbody.innerHTML = tests.map(t => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${t.system_a}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${t.system_b}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${t.test_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${t.statistic.toFixed(3)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${t.p_value < 0.001 ? '< 0.001' : t.p_value.toFixed(4)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${t.is_significant ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                            ${t.is_significant ? '✓ Significant' : 'Not Significant'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(t.effect_size || 0).toFixed(3)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${t.effect_size_interpretation || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderEfficiencyMetrics(efficiency) {
+            document.getElementById('latency').textContent = `${efficiency.avg_latency_ms.toFixed(0)}ms`;
+            document.getElementById('eff-avg-latency').textContent = `${efficiency.avg_latency_ms.toFixed(0)}ms`;
+            document.getElementById('eff-median-latency').textContent = `${(efficiency.median_latency_ms || 0).toFixed(0)}ms`;
+            document.getElementById('eff-p95-latency').textContent = `${(efficiency.p95_latency_ms || 0).toFixed(0)}ms`;
+            document.getElementById('eff-p99-latency').textContent = `${(efficiency.p99_latency_ms || 0).toFixed(0)}ms`;
+            document.getElementById('eff-avg-tokens').textContent = efficiency.avg_tokens_used || 0;
+            document.getElementById('eff-total-tokens').textContent = (efficiency.total_tokens_used || 0).toLocaleString();
+            document.getElementById('eff-total-cost').textContent = `$${(efficiency.estimated_cost_usd || 0).toFixed(4)}`;
+            document.getElementById('eff-avg-cost').textContent = `$${((efficiency.estimated_cost_usd || 0) / 100).toFixed(6)}`;
+        }
+
+        function renderQueryTypePerformance(queryTypes) {
+            const ctx = document.getElementById('queryTypeChart').getContext('2d');
+            if (charts.queryType) charts.queryType.destroy();
+
+            charts.queryType = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: queryTypes.map(qt => qt.query_type),
+                    datasets: [{
+                        label: 'Average Score',
+                        data: queryTypes.map(qt => qt.avg_score),
+                        backgroundColor: 'rgb(59, 130, 246)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0
+                        }
+                    }
+                }
+            });
+        }
+
+        // Modal functions
+        function runNewEvaluation() {
+            document.getElementById('runEvalModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('runEvalModal').classList.add('hidden');
+        }
+
+        async function startEvaluation() {
+            const experimentName = document.getElementById('experiment-name').value;
+            const datasetName = document.getElementById('dataset-select').value;
+
+            if (!experimentName) {
+                alert('Please enter an experiment name');
+                return;
+            }
+
+            try {
+                const response = await fetch('/evaluation/api/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        experiment_name: experimentName,
+                        dataset_name: datasetName,
+                        metadata: {
+                            run_baselines: document.getElementById('run-baselines').checked,
+                            run_ablations: document.getElementById('run-ablations').checked
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Evaluation started! ID: ' + data.evaluation_id);
+                    closeModal();
+                    // Reload dashboard
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error starting evaluation:', error);
+                alert('Failed to start evaluation');
+            }
+        }
+
+        // Export functions
+        async function exportLatex() {
+            if (!currentEvaluationId) {
+                alert('No evaluation selected');
+                return;
+            }
+
+            window.location.href = `/evaluation/api/runs/${currentEvaluationId}/export/latex`;
+        }
+
+        async function exportJSON() {
+            if (!currentEvaluationId) {
+                alert('No evaluation selected');
+                return;
+            }
+
+            window.location.href = `/evaluation/api/runs/${currentEvaluationId}/export/json`;
+        }
+
+        function exportPDF() {
+            alert('PDF export will be available soon!');
+        }
+    </script>
+</body>
+</html>
